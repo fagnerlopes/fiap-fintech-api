@@ -13,7 +13,15 @@ import java.time.LocalDate;
 public class PessoaFisica {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+            strategy = GenerationType.SEQUENCE,
+            generator = "SEQ_PESSOA_FISICA"
+    )
+    @SequenceGenerator(
+            name = "SEQ_PESSOA_FISICA",
+            sequenceName = "SEQ_PESSOA_FISICA",
+            allocationSize = 1
+    )
     @Column(name = "id_pf")
     private Long idPf;
 

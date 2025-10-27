@@ -139,12 +139,14 @@ public class UsuarioService {
     }
 
     /**
-     * Atualiza um usuário existente
+     * Atualiza um usuário existente (incluindo dados de PF/PJ se fornecidos)
      * @param usuario Usuario com dados atualizados
+     * @param pessoaFisicaData Dados de Pessoa Física (opcional)
+     * @param pessoaJuridicaData Dados de Pessoa Jurídica (opcional)
      * @return Usuario atualizado
      */
     @Transactional
-    public Usuario atualizar(Usuario usuario) {
+    public Usuario atualizar(Usuario usuario, PessoaFisica pessoaFisicaData, PessoaJuridica pessoaJuridicaData) {
         if (usuario.getIdUsuario() == null) {
             throw new IllegalArgumentException("ID do usuário é obrigatório para atualização");
         }
@@ -159,18 +161,65 @@ public class UsuarioService {
             }
         }
 
+        // Atualizar campos do Usuario
+        usuarioExistente.setEmail(usuario.getEmail());
+        usuarioExistente.setTipoUsuario(usuario.getTipoUsuario());
+
         // Se uma nova senha foi fornecida, fazer o hash
         if (usuario.getSenha() != null && !usuario.getSenha().trim().isEmpty()) {
-            usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
-        } else {
-            // Manter a senha antiga
-            usuario.setSenha(usuarioExistente.getSenha());
+            usuarioExistente.setSenha(passwordEncoder.encode(usuario.getSenha()));
         }
 
-        // Manter a data de criação original
-        usuario.setCriadoEm(usuarioExistente.getCriadoEm());
+        // Atualizar dados de Pessoa Física (se fornecidos)
+        if (pessoaFisicaData != null && usuario.getTipoUsuario() == TipoUsuario.PF) {
+            try {
+                PessoaFisica pfExistente = buscarPessoaFisicaPorIdUsuario(usuario.getIdUsuario());
+                
+                // Atualizar campos
+                pfExistente.setNome(pessoaFisicaData.getNome());
+                pfExistente.setDataNasc(pessoaFisicaData.getDataNasc());
+                
+                // CPF só pode ser atualizado se não houver duplicata
+                if (!pfExistente.getCpf().equals(pessoaFisicaData.getCpf())) {
+                    if (pessoaFisicaRepository.existsByCpf(pessoaFisicaData.getCpf())) {
+                        throw new DadosDuplicadosException("CPF já cadastrado: " + pessoaFisicaData.getCpf());
+                    }
+                    pfExistente.setCpf(pessoaFisicaData.getCpf());
+                }
+                
+                pessoaFisicaRepository.save(pfExistente);
+            } catch (RecursoNaoEncontradoException e) {
+                // Se não existe, pode criar uma nova
+                pessoaFisicaData.setUsuario(usuarioExistente);
+                pessoaFisicaRepository.save(pessoaFisicaData);
+            }
+        }
 
-        return usuarioRepository.save(usuario);
+        // Atualizar dados de Pessoa Jurídica (se fornecidos)
+        if (pessoaJuridicaData != null && usuario.getTipoUsuario() == TipoUsuario.PJ) {
+            try {
+                PessoaJuridica pjExistente = buscarPessoaJuridicaPorIdUsuario(usuario.getIdUsuario());
+                
+                // Atualizar campos
+                pjExistente.setRazaoSocial(pessoaJuridicaData.getRazaoSocial());
+                
+                // CNPJ só pode ser atualizado se não houver duplicata
+                if (!pjExistente.getCnpj().equals(pessoaJuridicaData.getCnpj())) {
+                    if (pessoaJuridicaRepository.existsByCnpj(pessoaJuridicaData.getCnpj())) {
+                        throw new DadosDuplicadosException("CNPJ já cadastrado: " + pessoaJuridicaData.getCnpj());
+                    }
+                    pjExistente.setCnpj(pessoaJuridicaData.getCnpj());
+                }
+                
+                pessoaJuridicaRepository.save(pjExistente);
+            } catch (RecursoNaoEncontradoException e) {
+                // Se não existe, pode criar uma nova
+                pessoaJuridicaData.setUsuario(usuarioExistente);
+                pessoaJuridicaRepository.save(pessoaJuridicaData);
+            }
+        }
+
+        return usuarioRepository.save(usuarioExistente);
     }
 
     /**

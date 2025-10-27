@@ -12,7 +12,15 @@ import jakarta.persistence.*;
 public class PessoaJuridica {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+            strategy = GenerationType.SEQUENCE,
+            generator = "SEQ_PESSOA_JURIDICA"
+    )
+    @SequenceGenerator(
+            name = "SEQ_PESSOA_JURIDICA",
+            sequenceName = "SEQ_PESSOA_JURIDICA",
+            allocationSize = 1
+    )
     @Column(name = "id_pj")
     private Long idPj;
 

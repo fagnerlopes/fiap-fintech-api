@@ -4,6 +4,7 @@ import br.com.fintech.fintechapi.model.PessoaFisica;
 import br.com.fintech.fintechapi.model.PessoaJuridica;
 import br.com.fintech.fintechapi.model.TipoUsuario;
 import br.com.fintech.fintechapi.model.Usuario;
+import br.com.fintech.fintechapi.security.JwtUtil;
 import br.com.fintech.fintechapi.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -30,6 +31,9 @@ public class AuthController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+    
+    @Autowired
+    private JwtUtil jwtUtil;
 
     /**
      * Endpoint para registro de novo usuário
@@ -119,11 +123,11 @@ public class AuthController {
     }
 
     /**
-     * Endpoint para login de usuário
+     * Endpoint para login de usuário com JWT
      * POST /api/auth/login
      * 
      * @param loginRequest Map contendo email e senha
-     * @return Informações do usuário autenticado
+     * @return Token JWT e informações do usuário autenticado
      */
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
@@ -136,19 +140,26 @@ public class AuthController {
             new UsernamePasswordAuthenticationToken(email, senha)
         );
 
-        // Definir o contexto de segurança
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        // Gerar token JWT
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String token = jwtUtil.generateToken(userDetails);
 
         // Buscar usuário completo
         Usuario usuario = usuarioService.buscarPorEmail(email);
 
-        // Preparar resposta (sem senha)
+        // Preparar resposta com token JWT
         Map<String, Object> response = new HashMap<>();
-        response.put("idUsuario", usuario.getIdUsuario());
-        response.put("email", usuario.getEmail());
-        response.put("tipoUsuario", usuario.getTipoUsuario());
-        response.put("criadoEm", usuario.getCriadoEm());
+        response.put("token", token);
+        response.put("type", "Bearer");
+        response.put("expiresIn", jwtUtil.getExpirationTime() / 1000); // em segundos
         response.put("message", "Login realizado com sucesso");
+        
+        // Dados do usuário
+        Map<String, Object> usuarioData = new HashMap<>();
+        usuarioData.put("idUsuario", usuario.getIdUsuario());
+        usuarioData.put("email", usuario.getEmail());
+        usuarioData.put("tipoUsuario", usuario.getTipoUsuario());
+        usuarioData.put("criadoEm", usuario.getCriadoEm());
 
         // Adicionar dados de PF ou PJ
         if (usuario.getTipoUsuario() == TipoUsuario.PF) {
@@ -158,7 +169,7 @@ public class AuthController {
                 pfResponse.put("nome", pf.getNome());
                 pfResponse.put("cpf", pf.getCpf());
                 pfResponse.put("dataNasc", pf.getDataNasc());
-                response.put("pessoaFisica", pfResponse);
+                usuarioData.put("pessoaFisica", pfResponse);
             } catch (Exception e) {
                 // PF não encontrada
             }
@@ -168,11 +179,13 @@ public class AuthController {
                 Map<String, Object> pjResponse = new HashMap<>();
                 pjResponse.put("cnpj", pj.getCnpj());
                 pjResponse.put("razaoSocial", pj.getRazaoSocial());
-                response.put("pessoaJuridica", pjResponse);
+                usuarioData.put("pessoaJuridica", pjResponse);
             } catch (Exception e) {
                 // PJ não encontrada
             }
         }
+        
+        response.put("usuario", usuarioData);
 
         return ResponseEntity.ok(response);
     }

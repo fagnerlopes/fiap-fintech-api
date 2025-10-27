@@ -79,23 +79,57 @@ public class UsuarioController {
     }
 
     /**
-     * Atualiza um usuário
+     * Atualiza um usuário (incluindo dados de PF/PJ)
      * PUT /api/usuarios/{id}
      * 
      * @param id ID do usuário
-     * @param usuarioAtualizado Dados atualizados
+     * @param requestBody Map contendo dados do usuario e pessoaFisica/pessoaJuridica
      * @return Usuario atualizado
      */
+    @SuppressWarnings("unchecked")
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<Map<String, Object>> atualizar(
             @PathVariable Long id,
-            @RequestBody Usuario usuarioAtualizado) {
+            @RequestBody Map<String, Object> requestBody) {
         
-        usuarioAtualizado.setIdUsuario(id);
-        Usuario usuario = usuarioService.atualizar(usuarioAtualizado);
+        // Extrair dados do usuario
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(id);
+        usuario.setEmail((String) requestBody.get("email"));
+        usuario.setTipoUsuario(TipoUsuario.valueOf((String) requestBody.get("tipoUsuario")));
         
-        return ResponseEntity.ok(montarResponseUsuario(usuario));
+        // Senha é opcional na atualização
+        if (requestBody.containsKey("senha")) {
+            usuario.setSenha((String) requestBody.get("senha"));
+        }
+        
+        // Extrair dados de Pessoa Física (se existir)
+        PessoaFisica pessoaFisica = null;
+        if (requestBody.containsKey("pessoaFisica")) {
+            Map<String, Object> pfData = (Map<String, Object>) requestBody.get("pessoaFisica");
+            pessoaFisica = new PessoaFisica();
+            pessoaFisica.setNome((String) pfData.get("nome"));
+            pessoaFisica.setCpf((String) pfData.get("cpf"));
+            
+            if (pfData.containsKey("dataNasc")) {
+                pessoaFisica.setDataNasc(java.time.LocalDate.parse((String) pfData.get("dataNasc")));
+            }
+        }
+        
+        // Extrair dados de Pessoa Jurídica (se existir)
+        PessoaJuridica pessoaJuridica = null;
+        if (requestBody.containsKey("pessoaJuridica")) {
+            Map<String, Object> pjData = (Map<String, Object>) requestBody.get("pessoaJuridica");
+            pessoaJuridica = new PessoaJuridica();
+            pessoaJuridica.setCnpj((String) pjData.get("cnpj"));
+            pessoaJuridica.setRazaoSocial((String) pjData.get("razaoSocial"));
+        }
+        
+        // Atualizar usuario e relacionamentos
+        Usuario usuarioAtualizado = usuarioService.atualizar(usuario, pessoaFisica, pessoaJuridica);
+        
+        return ResponseEntity.ok(montarResponseUsuario(usuarioAtualizado));
     }
 
     /**

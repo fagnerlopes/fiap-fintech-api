@@ -1,5 +1,7 @@
 package br.com.fintech.fintechapi.config;
 
+import br.com.fintech.fintechapi.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -19,11 +22,14 @@ import java.util.List;
 
 /**
  * Configuração de segurança da aplicação
- * Define regras de autenticação, autorização e CORS
+ * Define regras de autenticação, autorização, CORS e JWT
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     /**
      * Bean do BCryptPasswordEncoder para hash de senhas
@@ -42,12 +48,12 @@ public class SecurityConfig {
     }
 
     /**
-     * Configuração da cadeia de filtros de segurança
+     * Configuração da cadeia de filtros de segurança com JWT
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // Desabilitar CSRF (comum para APIs REST)
+            // Desabilitar CSRF (não necessário para APIs stateless com JWT)
             .csrf(csrf -> csrf.disable())
             
             // Configurar CORS
@@ -67,13 +73,13 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             
-            // Configurar autenticação HTTP Basic
-            .httpBasic(basic -> {})
-            
-            // Configurar gerenciamento de sessão
+            // Configurar gerenciamento de sessão como STATELESS (JWT não usa sessões)
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-            );
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            
+            // Adicionar o filtro JWT antes do filtro padrão de autenticação
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
