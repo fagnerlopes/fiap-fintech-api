@@ -23,7 +23,9 @@ API RESTful para gestão financeira pessoal e empresarial desenvolvida como proj
 Este projeto é uma API REST para gestão financeira que permite:
 
 - ✅ Cadastro e autenticação de usuários (PF e PJ)
-- 🔜 Gerenciamento de receitas
+- ✅ Gerenciamento de categorias
+- ✅ Gerenciamento de subcategorias
+- ✅ Gerenciamento de receitas
 - 🔜 Gerenciamento de despesas
 - 🔜 Controle de contas bancárias
 - 🔜 Categorização de transações
