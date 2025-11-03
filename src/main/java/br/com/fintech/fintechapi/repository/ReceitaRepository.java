@@ -1,6 +1,8 @@
 package br.com.fintech.fintechapi.repository;
 
 import br.com.fintech.fintechapi.model.Receita;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -65,6 +67,31 @@ public interface ReceitaRepository extends JpaRepository<Receita, Long> {
             @Param("dataFim") LocalDate dataFim,
             @Param("idCategoria") Long idCategoria,
             @Param("pendente") Integer pendente
+    );
+
+    /**
+     * Busca receitas com filtros opcionais e paginação (JPQL dinâmica)
+     * Todos os parâmetros são opcionais, exceto paginação
+     * @param idUsuario ID do usuário (obrigatório)
+     * @param dataInicio Data inicial (opcional)
+     * @param dataFim Data final (opcional)
+     * @param idCategoria ID da categoria (opcional)
+     * @param pendente Status pendente (opcional)
+     * @param pageable Configuração de paginação (obrigatório)
+     * @return Página de receitas filtradas
+     */
+    @Query("SELECT r FROM Receita r WHERE r.usuario.idUsuario = :idUsuario " +
+           "AND (:dataInicio IS NULL OR r.dataEntrada >= :dataInicio) " +
+           "AND (:dataFim IS NULL OR r.dataEntrada <= :dataFim) " +
+           "AND (:idCategoria IS NULL OR r.categoria.idCategoria = :idCategoria) " +
+           "AND (:pendente IS NULL OR r.pendente = :pendente)")
+    Page<Receita> findByFiltrosComPaginacao(
+            @Param("idUsuario") Long idUsuario,
+            @Param("dataInicio") LocalDate dataInicio,
+            @Param("dataFim") LocalDate dataFim,
+            @Param("idCategoria") Long idCategoria,
+            @Param("pendente") Integer pendente,
+            Pageable pageable
     );
 }
 

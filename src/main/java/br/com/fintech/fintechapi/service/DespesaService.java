@@ -11,6 +11,10 @@ import br.com.fintech.fintechapi.repository.DespesaRepository;
 import br.com.fintech.fintechapi.repository.SubcategoriaRepository;
 import br.com.fintech.fintechapi.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -126,6 +130,50 @@ public class DespesaService {
         }
 
         return despesaRepository.findByFiltros(idUsuario, dataInicio, dataFim, idCategoria, pendente);
+    }
+
+    /**
+     * Lista despesas com filtros opcionais e paginação
+     * @param idUsuario ID do usuário
+     * @param dataInicio Data inicial (opcional)
+     * @param dataFim Data final (opcional)
+     * @param idCategoria ID da categoria (opcional)
+     * @param pendente Status pendente (opcional)
+     * @param page Número da página (0-based)
+     * @param size Tamanho da página
+     * @return Página de despesas filtradas
+     */
+    public Page<Despesa> listarComFiltrosEPaginacao(
+            Long idUsuario,
+            LocalDate dataInicio,
+            LocalDate dataFim,
+            Long idCategoria,
+            Integer pendente,
+            int page,
+            int size) {
+        
+        // Validação de período (se ambos forem fornecidos)
+        if (dataInicio != null && dataFim != null && dataInicio.isAfter(dataFim)) {
+            throw new IllegalArgumentException("Data início não pode ser maior que data fim");
+        }
+
+        // Validação de paginação
+        if (page < 0) {
+            throw new IllegalArgumentException("Número da página não pode ser negativo");
+        }
+        if (size <= 0) {
+            throw new IllegalArgumentException("Tamanho da página deve ser maior que zero");
+        }
+        if (size > 100) {
+            throw new IllegalArgumentException("Tamanho da página não pode ser maior que 100");
+        }
+
+        // Criar Pageable com ordenação por dataVencimento DESC
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "dataVencimento"));
+
+        return despesaRepository.findByFiltrosComPaginacao(
+            idUsuario, dataInicio, dataFim, idCategoria, pendente, pageable
+        );
     }
 
     @Transactional

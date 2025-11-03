@@ -7,6 +7,7 @@ import br.com.fintech.fintechapi.model.Usuario;
 import br.com.fintech.fintechapi.service.ReceitaService;
 import br.com.fintech.fintechapi.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,27 +44,44 @@ public class ReceitaController {
     }
 
     /**
-     * Lista todas as receitas do usuário autenticado com filtros opcionais
+     * Lista todas as receitas do usuário autenticado com filtros opcionais e paginação
      * GET /api/receitas
-     * GET /api/receitas?dataInicio=2025-01-01&dataFim=2025-12-31
-     * GET /api/receitas?idCategoria=1&pendente=1
+     * GET /api/receitas?page=0&size=20
+     * GET /api/receitas?dataInicio=2025-01-01&dataFim=2025-12-31&page=0&size=20
+     * GET /api/receitas?idCategoria=1&pendente=1&page=0&size=20
      * 
      * @param dataInicio Data inicial (opcional)
      * @param dataFim Data final (opcional)
      * @param idCategoria ID da categoria (opcional)
      * @param pendente Status pendente 0=não, 1=sim (opcional)
-     * @return Lista de receitas filtradas
+     * @param page Número da página (0-based, padrão 0)
+     * @param size Tamanho da página (padrão 20, máximo 100)
+     * @return Página de receitas filtradas ou lista completa se paginação não especificada
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<List<Receita>> listarTodas(
+    public ResponseEntity<?> listarTodas(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
             @RequestParam(required = false) Long idCategoria,
-            @RequestParam(required = false) Integer pendente) {
+            @RequestParam(required = false) Integer pendente,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         
         Long idUsuario = getUsuarioAutenticadoId();
         
+        // Se paginação foi fornecida, usa endpoint com paginação
+        if (page != null || size != null) {
+            int pageNumber = (page != null) ? page : 0;
+            int pageSize = (size != null) ? size : 20;
+            
+            Page<Receita> paginaReceitas = receitaService.listarComFiltrosEPaginacao(
+                idUsuario, dataInicio, dataFim, idCategoria, pendente, pageNumber, pageSize
+            );
+            return ResponseEntity.ok(paginaReceitas);
+        }
+        
+        // Caso contrário, retorna lista completa (sem paginação)
         // Se algum filtro foi fornecido, usa o método com filtros
         if (dataInicio != null || dataFim != null || idCategoria != null || pendente != null) {
             List<Receita> receitas = receitaService.listarComFiltros(
