@@ -2,6 +2,8 @@ package br.com.fintech.fintechapi.repository;
 
 import br.com.fintech.fintechapi.model.Receita;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -40,5 +42,29 @@ public interface ReceitaRepository extends JpaRepository<Receita, Long> {
      * @return Lista de receitas pendentes
      */
     List<Receita> findByUsuarioIdUsuarioAndPendente(Long idUsuario, Integer pendente);
+
+    /**
+     * Busca receitas com filtros opcionais (JPQL dinâmica)
+     * Todos os parâmetros são opcionais
+     * @param idUsuario ID do usuário (obrigatório)
+     * @param dataInicio Data inicial (opcional)
+     * @param dataFim Data final (opcional)
+     * @param idCategoria ID da categoria (opcional)
+     * @param pendente Status pendente (opcional)
+     * @return Lista de receitas filtradas
+     */
+    @Query("SELECT r FROM Receita r WHERE r.usuario.idUsuario = :idUsuario " +
+           "AND (:dataInicio IS NULL OR r.dataEntrada >= :dataInicio) " +
+           "AND (:dataFim IS NULL OR r.dataEntrada <= :dataFim) " +
+           "AND (:idCategoria IS NULL OR r.categoria.idCategoria = :idCategoria) " +
+           "AND (:pendente IS NULL OR r.pendente = :pendente) " +
+           "ORDER BY r.dataEntrada DESC")
+    List<Receita> findByFiltros(
+            @Param("idUsuario") Long idUsuario,
+            @Param("dataInicio") LocalDate dataInicio,
+            @Param("dataFim") LocalDate dataFim,
+            @Param("idCategoria") Long idCategoria,
+            @Param("pendente") Integer pendente
+    );
 }
 

@@ -43,15 +43,36 @@ public class ReceitaController {
     }
 
     /**
-     * Lista todas as receitas do usuário autenticado
+     * Lista todas as receitas do usuário autenticado com filtros opcionais
      * GET /api/receitas
+     * GET /api/receitas?dataInicio=2025-01-01&dataFim=2025-12-31
+     * GET /api/receitas?idCategoria=1&pendente=1
      * 
-     * @return Lista de receitas
+     * @param dataInicio Data inicial (opcional)
+     * @param dataFim Data final (opcional)
+     * @param idCategoria ID da categoria (opcional)
+     * @param pendente Status pendente 0=não, 1=sim (opcional)
+     * @return Lista de receitas filtradas
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<List<Receita>> listarTodas() {
+    public ResponseEntity<List<Receita>> listarTodas(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+            @RequestParam(required = false) Long idCategoria,
+            @RequestParam(required = false) Integer pendente) {
+        
         Long idUsuario = getUsuarioAutenticadoId();
+        
+        // Se algum filtro foi fornecido, usa o método com filtros
+        if (dataInicio != null || dataFim != null || idCategoria != null || pendente != null) {
+            List<Receita> receitas = receitaService.listarComFiltros(
+                idUsuario, dataInicio, dataFim, idCategoria, pendente
+            );
+            return ResponseEntity.ok(receitas);
+        }
+        
+        // Caso contrário, lista todas
         List<Receita> receitas = receitaService.listarPorUsuario(idUsuario);
         return ResponseEntity.ok(receitas);
     }

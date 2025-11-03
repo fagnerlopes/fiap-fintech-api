@@ -36,10 +36,37 @@ public class DespesaController {
         return usuario.getIdUsuario();
     }
 
+    /**
+     * Lista todas as despesas do usuário autenticado com filtros opcionais
+     * GET /api/despesas
+     * GET /api/despesas?dataInicio=2025-01-01&dataFim=2025-12-31
+     * GET /api/despesas?idCategoria=1&pendente=1
+     * 
+     * @param dataInicio Data inicial (opcional)
+     * @param dataFim Data final (opcional)
+     * @param idCategoria ID da categoria (opcional)
+     * @param pendente Status pendente 0=não, 1=sim (opcional)
+     * @return Lista de despesas filtradas
+     */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<List<Despesa>> listarTodas() {
+    public ResponseEntity<List<Despesa>> listarTodas(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+            @RequestParam(required = false) Long idCategoria,
+            @RequestParam(required = false) Integer pendente) {
+        
         Long idUsuario = getUsuarioAutenticadoId();
+        
+        // Se algum filtro foi fornecido, usa o método com filtros
+        if (dataInicio != null || dataFim != null || idCategoria != null || pendente != null) {
+            List<Despesa> despesas = despesaService.listarComFiltros(
+                idUsuario, dataInicio, dataFim, idCategoria, pendente
+            );
+            return ResponseEntity.ok(despesas);
+        }
+        
+        // Caso contrário, lista todas
         List<Despesa> despesas = despesaService.listarPorUsuario(idUsuario);
         return ResponseEntity.ok(despesas);
     }

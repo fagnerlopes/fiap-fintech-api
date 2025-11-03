@@ -104,6 +104,30 @@ public class DespesaService {
         return despesaRepository.findByUsuarioIdUsuarioAndPendente(idUsuario, 1);
     }
 
+    /**
+     * Lista despesas com filtros opcionais
+     * @param idUsuario ID do usuário
+     * @param dataInicio Data inicial (opcional)
+     * @param dataFim Data final (opcional)
+     * @param idCategoria ID da categoria (opcional)
+     * @param pendente Status pendente (opcional)
+     * @return Lista de despesas filtradas
+     */
+    public List<Despesa> listarComFiltros(
+            Long idUsuario,
+            LocalDate dataInicio,
+            LocalDate dataFim,
+            Long idCategoria,
+            Integer pendente) {
+        
+        // Validação de período (se ambos forem fornecidos)
+        if (dataInicio != null && dataFim != null && dataInicio.isAfter(dataFim)) {
+            throw new IllegalArgumentException("Data início não pode ser maior que data fim");
+        }
+
+        return despesaRepository.findByFiltros(idUsuario, dataInicio, dataFim, idCategoria, pendente);
+    }
+
     @Transactional
     public Despesa atualizar(Despesa despesa, Long idUsuario) {
         if (despesa.getIdDespesa() == null) {

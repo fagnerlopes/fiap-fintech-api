@@ -144,6 +144,30 @@ public class ReceitaService {
     }
 
     /**
+     * Lista receitas com filtros opcionais
+     * @param idUsuario ID do usuário
+     * @param dataInicio Data inicial (opcional)
+     * @param dataFim Data final (opcional)
+     * @param idCategoria ID da categoria (opcional)
+     * @param pendente Status pendente (opcional)
+     * @return Lista de receitas filtradas
+     */
+    public List<Receita> listarComFiltros(
+            Long idUsuario,
+            LocalDate dataInicio,
+            LocalDate dataFim,
+            Long idCategoria,
+            Integer pendente) {
+        
+        // Validação de período (se ambos forem fornecidos)
+        if (dataInicio != null && dataFim != null && dataInicio.isAfter(dataFim)) {
+            throw new IllegalArgumentException("Data início não pode ser maior que data fim");
+        }
+
+        return receitaRepository.findByFiltros(idUsuario, dataInicio, dataFim, idCategoria, pendente);
+    }
+
+    /**
      * Atualiza uma receita existente
      * @param receita Receita com dados atualizados
      * @param idUsuario ID do usuário autenticado
