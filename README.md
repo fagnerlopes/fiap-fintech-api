@@ -26,10 +26,7 @@ Este projeto é uma API REST para gestão financeira que permite:
 - ✅ Gerenciamento de categorias
 - ✅ Gerenciamento de subcategorias
 - ✅ Gerenciamento de receitas
-- 🔜 Gerenciamento de despesas
-- 🔜 Controle de contas bancárias
-- 🔜 Categorização de transações
-- 🔜 Relatórios financeiros
+- ✅ Gerenciamento de despesas
 
 ---
 
@@ -53,7 +50,7 @@ Este projeto é uma API REST para gestão financeira que permite:
 ### Build & Deploy
 
 - **Maven**
-- **Docker** (banco de dados)
+- **Docker** (banco de dados Oracle)
 
 ---
 
@@ -78,41 +75,33 @@ git clone https://github.com/seu-usuario/fintech-api.git
 cd fintech-api
 ```
 
-### 2. Subir o Banco de Dados Oracle (Docker)
-
-```bash
-docker-compose up -d
-```
-
-Aguarde alguns minutos para o Oracle inicializar completamente.
-
-### 3. Configurar o Banco de Dados
+### 2. Configurar o Banco de Dados Oracle
 
 As configurações estão em `src/main/resources/application.properties`:
 
 ```properties
 # Banco de dados local (Docker)
-spring.datasource.url=jdbc:oracle:thin:@//localhost:1521/FREEPDB1
-spring.datasource.username=fitechapp
-spring.datasource.password=201125
+spring.datasource.url=jdbc:oracle:thin:@oracle.fiap.com.br:1521:orcl
+spring.datasource.username=RMxxxxxx
+spring.datasource.password=ddmmyy
 spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
 ```
 
-### 4. Compilar o Projeto
+### 3. Compilar o Projeto
 
 ```bash
-./mvnw clean compile
+mvn clean compile
 ```
 
-### 5. Executar a Aplicação
+### 4. Executar a Aplicação
 
 ```bash
-./mvnw spring-boot:run
+mvn spring-boot:run
 ```
 
 A aplicação estará disponível em: **http://localhost:8080**
 
-### 6. Testar a API
+### 5. Testar a API
 
 ```bash
 curl http://localhost:8080/health
