@@ -18,7 +18,7 @@ API RESTful para gestão financeira pessoal e empresarial desenvolvida como proj
 
 ---
 
-## Sobre o Projeto
+## Sobre a API
 
 Este projeto é uma API REST para gestão financeira que permite:
 
